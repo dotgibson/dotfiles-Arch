@@ -20,6 +20,13 @@ timedatectl set-ntp true                  # correct clock so mirror TLS works
 pacman -Syu                               # golden rule: full upgrade, never -Sy alone
 pacman -S --needed git base-devel sudo    # git=clone, sudo=bootstrap, base-devel=AUR
 
+# generate a UTF-8 locale — a minimal Arch ships NONE, so you land in the C
+# locale and bash prints raw \Uxxxx escapes instead of glyphs (the tmux
+# netspeed icons are the usual first casualty). Do this once.
+sed -i 's/^#en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen
+locale-gen
+echo 'LANG=en_US.UTF-8' > /etc/locale.conf   # read at next login (WSL: after Stage 3 restart)
+
 useradd -m -G wheel -s /bin/bash <you>    # bash for now; bootstrap switches to zsh
 passwd <you>
 
@@ -99,3 +106,4 @@ core/bindings → core/plugins → core/op → os/arch → local`.
   `os/arch.zsh`) lists the cached versions, then `sudo pacman -U <file>`.
 - **No SELinux.** Arch is permissive by default (AppArmor is opt-in), so the
   Fedora `se-*` helpers are intentionally absent from `os/arch.zsh`.
+

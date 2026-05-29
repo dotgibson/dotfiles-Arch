@@ -27,6 +27,13 @@ pacman -Sy archlinux-keyring
 pacman -Syu                               # golden rule: full upgrade, never -Sy alone
 pacman -S --needed git base-devel sudo    # git=clone, sudo=bootstrap, base-devel=AUR later
 
+# generate a UTF-8 locale — a minimal Arch ships NONE, so you land in the C
+# locale and bash prints raw \Uxxxx escapes instead of glyphs (the tmux
+# netspeed icons are the first thing you'll notice). Do this once.
+sed -i 's/^#en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen
+locale-gen
+echo 'LANG=en_US.UTF-8' > /etc/locale.conf   # applied at next login (WSL: after the Stage 3 restart)
+
 useradd -m -G wheel -s /bin/bash <you>    # bash for now; bootstrap switches login shell to zsh
 passwd <you>
 
@@ -156,3 +163,11 @@ search/owns-file) and package-name table, see `PORTING-MATRIX.md` in
 `dotfiles-core`. Alpine is the real outlier — `doas` not `sudo`, `apk` not a
 sync-DB manager, busybox `adduser` not `useradd`, musl not glibc — so its Stage 0
 diverges the most.
+
+**One more Stage-0 item for every distro: a UTF-8 locale.** A minimal **Arch**
+or **Alpine** generates none, so you land in `C` and bash renders the tmux
+status-bar glyphs as raw `\Uxxxx` escapes until you set one (Arch: edit
+`/etc/locale.gen` → `locale-gen` → `/etc/locale.conf`; Alpine: `apk add
+musl-locales` + set `LANG`, or use `C.UTF-8`). **openSUSE** and **Gentoo**
+installers usually set a locale already — just verify with `locale` before
+blaming your font. On WSL the locale applies on the Stage 3 restart.
