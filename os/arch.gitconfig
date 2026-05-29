@@ -1,0 +1,21 @@
+# dotfiles-Arch/os/arch.gitconfig
+# ──────────────────────────────────────────────────────────────────────────────
+# OS-specific git config. Symlinked to ~/.config/git/os.gitconfig by bootstrap.sh
+# and pulled in by Core's gitconfig. Holds ONLY what differs by OS/environment —
+# on macOS this would be osxkeychain; here it's a Linux-appropriate helper.
+# ──────────────────────────────────────────────────────────────────────────────
+
+[credential]
+	# Safe universal default: cache credentials in memory for 24h. No extra
+	# packages, and it works identically on ArchWSL and desktop Arch.
+	helper = cache --timeout=86400
+	#
+	# Better options to swap in once you know your environment:
+	#   • Desktop Arch with a keyring (persistent, encrypted at rest):
+	#       helper = /usr/lib/git-core/git-credential-libsecret
+	#       install:  sudo pacman -S --needed libsecret
+	#       (NOTE: on Arch the helper lives under /usr/lib/git-core, NOT
+	#        /usr/libexec/git-core as on Fedora.)
+	#   • ArchWSL + Git for Windows installed (shares credentials with Windows
+	#     GCM; exact path varies by Git-for-Windows version):
+	#       helper = "/mnt/c/Program Files/Git/mingw64/bin/git-credential-manager.exe"

@@ -1,0 +1,63 @@
+# dotfiles-Arch/install/packages.txt
+# pacman package names for the modern terminal stack. One per line; # comments ok.
+# Arch is the "cleanest distro for this stack": everything below is in the
+# official repos (core/extra), INCLUDING starship/atuin/yazi/mise/lazygit — so,
+# unlike Fedora, there are NO upstream-installer fallbacks in bootstrap.sh.
+
+# ── shell + multiplexer ───────────────────────────────────────
+zsh
+tmux
+
+# ── modern CLI core (all in extra) ────────────────────────────
+eza            # ls
+bat            # cat
+fd             # find  (binary is `fd` on Arch — not fdfind as on Debian)
+ripgrep        # grep
+zoxide         # cd
+fzf            # fuzzy finder
+git-delta      # git pager / diffs  (binary: delta)
+btop           # top/htop
+tealdeer       # tldr (fast Rust client; binary: tldr)
+dust           # du   (HAVE_DUST in tools.zsh picks it up)
+procs          # ps   (HAVE_PROCS in tools.zsh picks it up)
+sd             # sed-alternative (nvim-spectre / scripts; parity with the Mac)
+
+# ── prompt / history / runtime mgr / file mgr (in repos on Arch) ─
+starship       # prompt   (Fedora installs this from upstream; Arch packages it)
+atuin          # shell history
+yazi           # file manager
+mise           # polyglot runtime manager (node/python/go/...). `pacman -S mise`
+lazygit        # git TUI  (in extra — no COPR needed, unlike Fedora)
+
+# ── editor + git workflow ─────────────────────────────────────
+neovim
+git            # `git subtree` ships INSIDE this package on Arch — no separate pkg
+openssh        # ssh / ssh-keygen / ssh-agent — push via SSH (NOT shipped on minimal Arch)
+
+# ── clipboard ─────────────────────────────────────────────────
+wl-clipboard   # wl-copy / wl-paste (Wayland)
+xclip          # X11 fallback (sessions / SSH X-forward)
+
+# ── build toolchain (AUR builds, makepkg, native modules) ─────
+base-devel     # group: gcc/make/etc. Needed to build an AUR helper (paru/yay).
+# NOTE: language runtimes (rust/node/python/...) are owned by mise — see
+# core/mise/config.toml. We do NOT install `rust` from pacman here because the
+# whole CLI stack above is already packaged, so nothing needs `cargo` to build.
+
+# ── Neovim provider deps (fix :checkhealth) ───────────────────
+python-pynvim  # the Python 3 provider module (Arch name; Fedora = python3-neovim)
+python-pip     # pip for the system python   (Arch name; Fedora = python3-pip)
+# rust-analyzer  # uncomment if you use the Rust LSP (rustaceanvim wants it)
+# go             # uncomment if you want the Go LSP (gopls) + Go tooling
+
+# ── pacman quality-of-life helpers (used by os/arch.zsh) ──────
+pacman-contrib # provides checkupdates, paccache, rankmirrors
+reflector      # rank/refresh mirrorlist (run manually; see os/arch.zsh notes)
+
+# ── misc useful ───────────────────────────────────────────────
+curl
+wget
+jq
+direnv
+gawk
+flatpak
