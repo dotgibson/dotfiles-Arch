@@ -47,6 +47,8 @@ base-devel     # group: gcc/make/etc. Needed to build an AUR helper (paru/yay).
 # ── Neovim provider deps (fix :checkhealth) ───────────────────
 python-pynvim  # the Python 3 provider module (Arch name; Fedora = python3-neovim)
 python-pip     # pip for the system python   (Arch name; Fedora = python3-pip)
+tree-sitter-cli # nvim-treesitter (main) compiles parsers locally — needs CLI ≥0.26.1 (extra has 0.26.9)
+                # + a C/C++ compiler, which base-devel above already provides.
 # rust-analyzer  # uncomment if you use the Rust LSP (rustaceanvim wants it)
 # go             # uncomment if you want the Go LSP (gopls) + Go tooling
 
