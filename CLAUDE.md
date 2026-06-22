@@ -1,13 +1,13 @@
 # CLAUDE.md — dotfiles-Arch
 
 Project memory for Claude Code, auto-loaded every session. For the shared Core
-rules (the "is it Core?" test, the manifest contract, the load order) see
-`core/CLAUDE.md` and `core/CONTRIBUTING.md`.
+rules (the load order, the "is it Core?" test, the manifest contract) see
+`core/README.md` and `core/CONTRIBUTING.md`.
 
 ## What this repo is
 
-`dotfiles-Arch` is the **OS-native layer for Arch Linux (stamped from the Fedora template)** of a ten-repo, three-layer dotfiles fleet
-(Core → OS-native → Role → Showcase). Rolling release — never `pacman -Sy <pkg>` without `-u`; partial upgrades break things. Most tools are in the official repos, the rest one `paru -S` away in the AUR.
+`dotfiles-Arch` is the **OS-native layer for Arch Linux** in a **nine-repo dotfiles system** built on a three-layer
+model (Core → OS-native → Role). Arch is stamped from the Fedora template (see `core/PORTING-MATRIX.md`). Rolling release — never `pacman -Sy <pkg>` without `-u`; partial upgrades break things. Most tools are in the official repos, the rest one `paru -S` away in the AUR.
 
 ## The rule that bites
 
