@@ -130,7 +130,8 @@ wire_links() {
   for f in "$DOTFILES"/core/zsh/*.zsh; do
     link "$f" "$CONFIG/zsh/$(basename "$f")"
   done
-  [[ -f "$DOTFILES/core/tmux/tmux.conf" ]] && link "$DOTFILES/core/tmux/tmux.conf" "$CONFIG/tmux/tmux.conf"
+  [[ -f "$DOTFILES/core/tmux/tmux.conf" ]]       && link "$DOTFILES/core/tmux/tmux.conf"       "$CONFIG/tmux/tmux.conf"
+  [[ -f "$DOTFILES/core/tmux/tmux.reset.conf" ]] && link "$DOTFILES/core/tmux/tmux.reset.conf" "$CONFIG/tmux/tmux.reset.conf"
   # tmux popup scripts (prefix w/T/f) — symlink the dir + ensure they're runnable
   if [[ -d "$DOTFILES/core/tmux/scripts" ]]; then
     link "$DOTFILES/core/tmux/scripts" "$CONFIG/tmux/scripts"
