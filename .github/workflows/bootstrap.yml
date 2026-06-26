@@ -6,10 +6,10 @@ name: bootstrap
 
 on:
   pull_request:
-    paths: ['bootstrap.sh', 'core/lib/**', '.github/workflows/bootstrap.yml']
+    paths: ['bootstrap.sh', 'core/**', 'os/**', 'ssh/**', '.github/workflows/bootstrap.yml']
   push:
     branches: [main]
-    paths: ['bootstrap.sh', 'core/lib/**']
+    paths: ['bootstrap.sh', 'core/**', 'os/**', 'ssh/**', '.github/workflows/bootstrap.yml']
   workflow_dispatch:
 
 permissions:
@@ -20,4 +20,6 @@ jobs:
     uses: Gerrrt/dotfiles-core/.github/workflows/bootstrap-test.yml@main
     with:
       image: archlinux:latest
-      prep: "pacman -Sy --noconfirm zsh"
+      # Full sync+upgrade, not -Sy: a partial upgrade can pull a zsh newer than the
+      # base image's libs. --needed skips already-present bash.
+      prep: "pacman -Syu --noconfirm --needed bash zsh"
