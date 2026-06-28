@@ -6,7 +6,7 @@ rules (the load order, the "is it Core?" test, the manifest contract) see
 
 ## What this repo is
 
-`dotfiles-Arch` is the **OS-native layer for Arch Linux** in a **nine-repo dotfiles system** built on a three-layer
+`dotfiles-Arch` is the **OS-native layer for Arch Linux** in a **ten-repo dotfiles system** built on a three-layer
 model (Core → OS-native → Role). Arch is stamped from the Fedora template (see `core/PORTING-MATRIX.md`). Rolling release — never `pacman -Sy <pkg>` without `-u`; partial upgrades break things. Most tools are in the official repos, the rest one `paru -S` away in the AUR.
 
 ## The rule that bites
