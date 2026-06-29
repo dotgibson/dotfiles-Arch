@@ -1,17 +1,11 @@
-<div align="center">
-
 # 🏛️ dotfiles-Arch
 
-### Arch, ricing-ready.
-
-The Arch layer (pacman + AUR) — rolling-release, over the shared core.
+**Arch, ricing-ready.** The Arch layer (pacman + AUR) — rolling-release, over
+the shared core.
 
 `pacman` · `aur` · `zsh` · `nvim`
 
-[![showcase](https://img.shields.io/badge/showcase-live-7aa2f7?style=flat-square)](https://gerrrt.github.io/dotfiles-web/)
-[![Arch](https://img.shields.io/badge/Arch-rolling-7dcfff?style=flat-square)]()
-
-</div>
+[![showcase](https://img.shields.io/badge/showcase-live-7aa2f7?style=flat-square)](https://gerrrt.github.io/dotfiles-web/) ![Arch](https://img.shields.io/badge/Arch-rolling-7dcfff?style=flat-square)
 
 ---
 
