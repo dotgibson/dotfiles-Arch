@@ -1,4 +1,13 @@
-# dotfiles-Arch
+# 🏛️ dotfiles-Arch
+
+**Arch, ricing-ready.** The Arch layer (pacman + AUR) — rolling-release, over
+the shared core.
+
+`pacman` · `aur` · `zsh` · `nvim`
+
+[![showcase](https://img.shields.io/badge/showcase-live-7aa2f7?style=flat-square)](https://gerrrt.github.io/dotfiles-web/) ![Arch](https://img.shields.io/badge/Arch-rolling-7dcfff?style=flat-square)
+
+---
 
 The **OS-native layer** for Arch Linux. Core (zsh/tmux/nvim/git) is vendored
 under `core/` from [`dotfiles-core`](../dotfiles-core); this repo adds only what
