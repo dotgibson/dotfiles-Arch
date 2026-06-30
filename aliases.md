@@ -19,12 +19,12 @@ reference (modern CLI, git, safety nets) that applies on every machine.
 | `pacfiles` | `pacman -Ql` (list files in a package) |
 | `pacinfo` | `pacman -Qi` (package info) |
 | `paclog` | `tail -n 50 /var/log/pacman.log` |
-| `pacout` | `checkupdates` (available updates without applying) |
-| `paccacheclean` | `sudo paccache -rk2` (keep last 2 versions) |
-| `pacorphans` | List orphaned packages (function) |
+| `pacout` | `checkupdates` (available updates without applying; requires `pacman-contrib`) |
+| `paccacheclean` | `sudo paccache -rk2` (keep last 2 versions; requires `pacman-contrib`) |
+| `pacorphans` | List then remove orphaned packages via `sudo pacman -Rns` (function) |
 | `pacdowngrade <pkg>` | Downgrade package from local cache (function) |
 
-## AUR (paru / yay — whichever is installed first)
+## AUR (paru preferred; yay as fallback)
 
 | Alias | Expands To |
 |-------|------------|
@@ -47,7 +47,7 @@ reference (modern CLI, git, safety nets) that applies on every machine.
 |-------|-----------|----------|
 | `pbcopy` | `clip` | clip available |
 | `pbpaste` | `clip-paste` | clip-paste available |
-| `dotsync` | `cd ~/dotfiles-Arch` | always |
+| `dotsync` | `cd "$HOME/dotfiles-Arch"` | always |
 | `opsignin` | `eval "$(op signin)"` | 1Password CLI |
 | `localip` | `ip -brief -4 addr show scope global` | always |
 | `open` | `explorer.exe` | WSL2 |
