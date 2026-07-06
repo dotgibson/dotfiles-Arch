@@ -205,7 +205,7 @@ Project Link: [dotgibson](https://github.com/dotgibson/)
 [pacman-url]: https://wiki.archlinux.org/title/Pacman
 [aur-shield]: https://img.shields.io/badge/AUR-1793D1?style=flat-square
 [aur-url]: https://aur.archlinux.org
-[paru-shield]: https://img.shields.io/badge/paru-425265?style=flat-square
+[paru-shield]: https://img.shields.io/github/v/release/Morganamilo/paru?style=flat-square&logo=gnometerminal&logoColor=24283B&label=paru&labelColor=BB9AF7&color=3D59A1
 [paru-url]: https://github.com/Morganamilo/paru
 [reflector-shield]: https://img.shields.io/badge/Reflector-425265?style=flat-square
 [reflector-url]: https://wiki.archlinux.org/title/Reflector
