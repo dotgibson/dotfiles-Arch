@@ -1,118 +1,188 @@
-# 🏛️ dotfiles-Arch
+<!-- Back to top link -->
+<a id="readme-top"></a>
 
-**Arch, ricing-ready.** The Arch layer (pacman + AUR) — rolling-release, over
-the shared core.
+<!-- Project Shields -->
+<div align="center"><nobr>
 
-`pacman` · `aur` · `zsh` · `nvim`
+[![dotgibson][dotgibson-shield]][dotgibson-url]<!--
+-->[![CI][ci-shield]][ci-url]<!--
+-->![Last Commit][lastcommit-shield]<!--
+-->[![Contributors][contributors-shield]][contributors-url]<!--
+-->[![Forks][forks-shield]][forks-url]<!--
+-->[![Stargazers][stars-shield]][stars-url]<!--
+-->[![Issues][issues-shield]][issues-url]<!--
+-->[![Showcase][showcase-shield]][showcase-url]<!--
+-->[![MIT License][license-shield]][license-url]<!--
+-->[![LinkedIn][linkedin-shield]][linkedin-url]
 
-[![showcase](https://img.shields.io/badge/showcase-live-7aa2f7?style=flat-square)](https://dotgibson.github.io/dotfiles-web/) ![Arch](https://img.shields.io/badge/Arch-rolling-7dcfff?style=flat-square)
+</nobr></div>
 
----
+<!-- PROJECT LOGO -->
+<br />
+<div align="center">
+  <a href="https://github.com/dotgibson/">
+    <img src="https://raw.githubusercontent.com/dotgibson/.github/main/profile/logo.png" alt="Logo" width="80" height="80">
+  </a>
 
-The **OS-native layer** for Arch Linux. Core (zsh/tmux/nvim/git) is vendored
-under `core/` from [`dotfiles-core`](../dotfiles-core); this repo adds only what
-is genuinely Arch — pacman, the AUR, multilib, mirror management — and leans on
-Arch's deep official repos so there are no `curl | sh` fallbacks.
+  <h3 align="center">🏛️ dotfiles-Arch</h3>
 
-Stamped from the [`dotfiles-Fedora`](../dotfiles-Fedora) template per the
-[porting matrix](../dotfiles-core/PORTING-MATRIX.md).
+  <p align="center">
+    The Arch OS-native layer — rolling-release, pacman + AUR, over the shared Core.
+    <br />
+    <a href="https://dotgibson.github.io/dotfiles-web/docs/repos/dotfiles-Arch"><strong>Explore the docs »</strong></a>
+    <br />
+    <br />
+    <a href="https://dotgibson.github.io/dotfiles-web/playground/">View Demo</a>
+    &middot;
+    <a href="https://github.com/dotgibson/dotfiles-Arch/issues/new?labels=bug">Report Bug</a>
+    &middot;
+    <a href="https://github.com/dotgibson/dotfiles-Arch/issues/new?labels=enhancement">Request Feature</a>
+  </p>
+</div>
 
-## Stage 0 — prerequisites on a fresh/minimal Arch box (bare metal)
+<!-- TABLE OF CONTENTS -->
+<details>
+  <summary>Table of Contents</summary>
+  <ol>
+    <li><a href="#about-the-project">About The Project</a></li>
+    <li><a href="#getting-started">Getting Started</a></li>
+    <li><a href="#whats-in-this-layer">What's In This Layer</a></li>
+    <li><a href="#contributing">Contributing</a></li>
+    <li><a href="#license">License</a></li>
+    <li><a href="#contact">Contact</a></li>
+  </ol>
+</details>
 
-Skip this if you used `archinstall` or ArchWSL — both already give you a user
-with `sudo`. But a **manual** install drops you at a root prompt with no user,
-no `sudo`, and no `git`, so `bootstrap.sh` (which calls `sudo` everywhere) can't
-run yet. Lay the groundwork first, **as root**:
+<!-- ABOUT THE PROJECT -->
+## About The Project
+
+**`dotfiles-Arch` is the OS-native layer for Arch Linux** — one node in a
+cross-platform dotfiles system. The shared **Core** (zsh, tmux, Neovim, git,
+starship, mise) is authored once in
+[`dotfiles-core`](https://github.com/dotgibson/dotfiles-core) and vendored under
+`core/` via `git subtree`, so a clone is self-contained. This repo adds only what
+is genuinely Arch: `pacman`, the AUR, `multilib`, and mirror management — leaning
+on Arch's deep official repos so there are no `curl | sh` fallbacks.
+
+Arch is stamped from the [`dotfiles-Fedora`](https://github.com/dotgibson/dotfiles-Fedora)
+template per the [porting matrix][porting]. The full docs live on the
+[documentation site][docs].
+
+The system is three layers, each building on the one below:
+
+| Layer | Lives in | Owns |
+| --- | --- | --- |
+| **Core** | [`dotfiles-core`](https://github.com/dotgibson/dotfiles-core) → vendored into every OS repo's `core/` | zsh, tmux, nvim, git, starship — identical everywhere |
+| **OS-native** | `dotfiles-{MacBook,Windows,Fedora,Arch,openSUSE,Alpine,Gentoo}` (this repo among them) | package manager, clipboard, paths |
+| **Role** | `dotfiles-Kali`, `dotfiles-Defense` | offensive / defensive tooling |
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+<!-- GETTING STARTED -->
+## Getting Started
+
+### Prerequisites
+
+An Arch box and **Git**. On a **fresh or minimal** install you first need stage-0
+groundwork — a `sudo`-capable user, `git`, and a UTF-8 locale — before
+`bootstrap.sh` can run; `archinstall` and ArchWSL already give you that. The
+walkthrough is on the hub:
+
+> **[→ Arch stage-0 setup][arch-setup]**
+
+### Installation
 
 ```bash
-timedatectl set-ntp true                  # correct clock so mirror TLS works
-pacman -Syu                               # golden rule: full upgrade, never -Sy alone
-pacman -S --needed git base-devel sudo    # git=clone, sudo=bootstrap, base-devel=AUR
-
-# generate a UTF-8 locale — a minimal Arch ships NONE, so you land in the C
-# locale and bash prints raw \Uxxxx escapes instead of glyphs (the tmux
-# netspeed icons are the usual first casualty). Do this once.
-sed -i 's/^#en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen
-locale-gen
-echo 'LANG=en_US.UTF-8' > /etc/locale.conf   # read at next login (WSL: after Stage 3 restart)
-
-useradd -m -G wheel -s /bin/bash <you>    # bash for now; bootstrap switches to zsh
-passwd <you>
-
-# grant wheel sudo via a validated drop-in (no editor needed)
-echo '%wheel ALL=(ALL:ALL) ALL' > /etc/sudoers.d/10-wheel
-chmod 440 /etc/sudoers.d/10-wheel
-visudo -c                                 # must print "... parsed OK"
-
-su - <you>                                # become your user, then Install below
-```
-
-Gotchas at this stage:
-- **Keyring/signature errors** (old ISO): `sudo pacman -Sy archlinux-keyring && sudo pacman -Syu`, then retry.
-- **Private repo**: HTTPS clone needs a PAT, or set up SSH first
-  (`ssh-keygen -t ed25519`, add the `.pub` to GitHub) — Core's gitconfig pushes
-  via SSH anyway.
-- **No network yet**: `iwctl` (Wi-Fi) or `systemctl enable --now systemd-networkd systemd-resolved` (wired) before any `pacman` call.
-
-## Install (fresh Arch)
-
-```bash
-git clone <you>/dotfiles-Arch ~/dotfiles-Arch
+git clone https://github.com/dotgibson/dotfiles-Arch ~/dotfiles-Arch
 cd ~/dotfiles-Arch
-# one-time: vendor Core (skip if the repo already contains core/)
-git subtree add --prefix=core <you>/dotfiles-core main --squash
 ./bootstrap.sh
 exec zsh
 ```
 
-Flags: `--links-only` (re-link without touching pacman), `--no-flatpak`.
+`core/` is a vendored subtree and is **already present** in a clone — there is no
+submodule step. `bootstrap.sh` is idempotent: it does a full `pacman -Syu`,
+installs the package list, and symlinks Core + the Arch layer into place. Flags:
+`--links-only` (re-link without touching `pacman`), `--no-flatpak`.
 
-## Layout
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-```
-bootstrap.sh          pacman provision + Core/OS symlink wiring (idempotent)
-install/packages.txt  pacman package list (modern CLI stack)
-os/arch.zsh           OS-native shell layer -> symlinked to ~/.config/zsh/os.zsh
-os/arch.gitconfig     credential helper      -> ~/.config/git/os.gitconfig
-os/arch.conf          tmux netspeed/battery  -> ~/.config/tmux/os.conf
-ssh/config            hardened SSH client config -> ~/.ssh/config (keys never tracked)
-wsl/wsl.conf          /etc/wsl.conf for ArchWSL (systemd + default user)
-core/                 vendored from dotfiles-core (git subtree; do not hand-edit)
-```
+<!-- WHAT'S IN THIS LAYER -->
+## What's In This Layer
 
-Load order in `.zshrc`: `core/tools → core/aliases → core/functions → core/fzf →
-core/bindings → core/plugins → core/op → os/arch → local`.
+Only what changes with the OS. The heavy lifting — the shell modules, editor, and
+prompt — comes from vendored Core; this repo owns the Arch specifics:
 
-## Arch specifics baked in
+- `bootstrap.sh` — `pacman` provision + Core/OS symlink wiring (idempotent)
+- `install/packages.txt` — the `pacman` package list (modern CLI stack)
+- `os/arch.zsh` — clipboard + package-manager aliases → `~/.config/zsh/os.zsh`
+- `SETUP.md` — the from-scratch author walkthrough (mirrored on the hub)
+- `core/` — vendored from `dotfiles-core` (read-only here; edit upstream)
 
-- **Rolling release — never partial-upgrade.** `pacman -Sy <pkg>` (refresh
-  without `-u`) can pull a package built against newer libraries than your
-  un-upgraded system, and break things. `bootstrap.sh` always does a full
-  `pacman -Syu` before installing, and the shell layer only exposes `pacu`
-  (full `-Syu`) — there is deliberately **no** `-Sy <pkg>` alias.
-- **Everything is in the official repos.** eza/bat/fd/ripgrep/zoxide/fzf/delta/
-  btop/dust/procs/tealdeer plus **starship, atuin, yazi, mise, and lazygit** all
-  live in `core`/`extra`. Fedora installs the last five from upstream; Arch just
-  `pacman -S`'s them. This is why the matrix calls Arch the cleanest distro for
-  this stack.
-- **`git subtree` ships inside the `git` package** on Arch — there's no separate
-  `git-subtree` package to install (Fedora needs one).
-- **`fd` is named `fd`** here (not `fdfind` as on Debian); `core/zsh/tools.zsh`
-  resolves the name automatically, so nothing breaks across distros.
-- **The AUR is not automated.** Arch ships no AUR helper. Build `paru` once and
-  the `aur`/`aurs`/`auru` aliases in `os/arch.zsh` light up:
-  ```bash
-  sudo pacman -S --needed base-devel git
-  git clone https://aur.archlinux.org/paru.git && cd paru && makepkg -si
-  ```
-- **multilib (32-bit / Wine tooling)** is opt-in: uncomment the `[multilib]`
-  section in `/etc/pacman.conf`, then `sudo pacman -Syu`. `bootstrap.sh` does
-  **not** edit `pacman.conf` for you — it's a deliberate system change.
-- **Mirrors:** `reflector` is installed; rank fresh mirrors with
-  `sudo reflector --latest 20 --protocol https --sort rate --save /etc/pacman.d/mirrorlist`.
-- **No transaction "undo".** pacman has no `dnf history undo`; recover by
-  reinstalling an older build from the cache — `pacdowngrade <pkg>` (in
-  `os/arch.zsh`) lists the cached versions, then `sudo pacman -U <file>`.
-- **No SELinux.** Arch is permissive by default (AppArmor is opt-in), so the
-  Fedora `se-*` helpers are intentionally absent from `os/arch.zsh`.
+The things that actually bite on Arch — the rolling-release rule (never
+`pacman -Sy <pkg>` without `-u`), the un-automated AUR (`paru`), opt-in
+`multilib`, and the absent transaction undo — are written up on the hub,
+alongside the per-distro **[porting matrix][porting]**:
 
+> **[→ dotfiles-Arch on the documentation hub][repo-docs]**
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+<!-- CONTRIBUTING -->
+## Contributing
+
+This is an **OS-native layer**, so the contribution rule is a boundary rule:
+
+1. **Never hand-edit `core/`.** It is a vendored copy of `dotfiles-core` and is
+   overwritten on the next sync. Fix shared config **upstream** in
+   `dotfiles-core`, run `make audit` there, then `make sync` fans it out here.
+2. **Keep changes genuinely Arch.** If it would be identical on every distro, it
+   belongs in Core; if it changes with the operator, it belongs in a role repo.
+3. **Green the lint gate.** This repo's CI runs shellcheck + `bash -n` / `zsh -n`
+   on the repo-owned shell (the vendored `core/` is excluded — it is gated
+   upstream).
+
+Bugs and ideas: open an
+[issue](https://github.com/dotgibson/dotfiles-Arch/issues).
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+<!-- LICENSE -->
+## License
+
+Distributed under the MIT License. See [`LICENSE`](LICENSE) for more information.
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+<!-- CONTACT -->
+## Contact
+
+Garrett Allen - [@gerrrrt](https://x.com/gerrrrt) - <garrettallen2@gmail.com>
+
+Project Link: [dotgibson](https://github.com/dotgibson/)
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+<!-- Markdown Links & Images -->
+[repo-docs]: https://dotgibson.github.io/dotfiles-web/docs/repos/dotfiles-Arch
+[porting]: https://dotgibson.github.io/dotfiles-web/docs/reference/porting-matrix
+[arch-setup]: https://dotgibson.github.io/dotfiles-web/docs/guides/arch-setup
+[dotgibson-shield]: https://img.shields.io/github/v/release/dotgibson/dotfiles-Arch?style=flat-square&label=dotgibson&labelColor=181717&logo=data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAIAAAD8GO2jAAAF1klEQVR4nLSWbUxT7RnHr9PT09MXSltaoC9QXkqR16Iwhb0Iw8VYYE7jPri5aBaZzpmFZbpolpn4QeMyM%2BM%2B7MVt0Q9LNJIlxCzqxGWS6aKAig51vBQKIi3QltpCS0%2Fbc879pD1N3%2Bnz4fG5Pl2977v%2F331d131f5%2BZrddWQZAgAgy9uCRlefICzT6GeIsP%2FXF15kahmu9JglGmLRQoRQdIQWgu77BuWGe%2Fo%2BOqym8odApaWomTT1%2Bl2HqirahaTuJ9kQMggkgYhDRGfRiQDZBi9fuf52%2BD7l1b3ZhRcmq%2FMnBHmibuO7fvWoTalVoDjQRwL8RGgEOtzB0MbtBDnkRjGR0AgTK%2BQfNukr1LKXlhXKZpJSxTKGoFSq9vf16tQ8%2FiEh094Vu0L449mLGMup20DRWuFYVCiFm%2BvU36nTbOlMB%2BnCDxIOBzhvv6nFpc3TS0dUKDRHzh1Jk9O8wlPYN326Oa%2FJobnN8shAOxqKjrdXa8WSnGKWPewR%2FuHLG5P8oKUFJHi%2FH19F6UKEQ%2BnbJap27%2B%2BtWR15VAHgLkV%2F%2F0xW6OuQCfNE4PgmyX6f0xZKYbJDuj43lmtoYqHU%2FaZdwNXr4eoUG51zqgw%2B%2FCtrbm0UCeRynBhqVj2YC4RNC%2FuqStbKkydAODzeO7%2B6QYTpnOIYgB729R729RY9DAGafb0wDOHLwAA5vKK1mJNFoCpsxeLLn%2Fy91uU359719%2FfVXL%2BSM35IzU9rcXciCcQujz0imOfbGhOB0jkGo2hFQBW7Quzr0Zzq6vyBT%2FuKY%2BHErfBmQWLK1Lhr6l1OkleCqC0poPb%2FuTwv3OrA8DPDhgkokgLmLX77o86kqcGJmaj5xjr1JWlAAr1Js75MDEGAAI%2B1mvWX%2F1JY29XmYDPS5ZoNsrM24si1xSh3%2FRbGBYlz%2F73g41ztqliqYv1onyVHgDocMjjXASAKycavlqnZBHa2ajcasjv%2B8MbAPhRV9nI5MezB41crIPPHWOW9Gtl9XhDDCMCokIqSwGQ4shvyucFhEQCnqlSdm9k%2BdKt6XM%2FqO7aof7t8YbIIW5SHdpVIhUTAOAP0L8bmM3MHgJwByidQCgnhSmAqOEYnQ8AgRBr%2FuUzKsgggIs3pyVCfkeTCgAmFtaNOgm39C%2F3511r2W8JYvIAJbIaAwQ3vKAEoVgRaTQIBYKxqxgMs6euvdUXiQDgeHd5rV7K1fb2kC2rOgaYghQBMJ5grI3HUGuuhQiNIOWq8sy%2FLTgCKplgT0ZtCyprWw7%2FvKCyNr6yQqYg8cim59a9KQDnwv84R1%2F99UwAzsMya4vxeOYLN7YePGG%2BcAPjxXS%2BoavknFfOlRTAh8nHKNqLa1v2ZwK6dxQZtHk5ahu3%2FcYmLsoh%2B%2FsUgN%2BztDQzEvkYFBurGnan%2FS1%2B1P98L1FbxLIPzh193X%2FtwbmjiGUBYHd5nVFRCABPlxdtfh%2B3LHGKxof%2Bqo90C6yj58yi9Tm1kWjr94ZXsGhTuDuynAx2z0245yY4X06Kf9HWFd0N%2BuPbsUR64%2B3a57Erig2qIoOIlJSUNE69GWTZRFufXvRNL%2Fo2ywyJE1fMP6xWqHBEP5yfvP7%2FbAAAsFufG01mkVCqkGvLyrbNTD2mw9kfDckmE0oudx9rUZfhiF5Zd%2F%2F00QDF0NkBTJhanB3e0riHJIRKhXarqWfdu%2Bx0WnOot1ftuNR90lhQzEO0L7B2YvCm3b%2BWNI%2ByffSLq757%2BPcquYaIvBtgdcXycuzO9MzTFdccd9IwDNMVlDaXbzPXtxsVhQRDEQzl8i6d%2Buf12Y%2BONDVMo6vOfHWJxHLz3l811u8WAEZABCNAAHSI8n8k2HABKRJjLJ8JECxFMAE%2BHXhiGb7yn35vcCNDKVsEcSuv%2BEpn%2B7Etla0CwAQIOBLBhrkt85kAnwm8mX95e%2FTOa9vUZiIxQI43r0Kura9uN5SYNMoyuVDGZ2nK73C65iy28Rezo44152bSKYAvz3ifVA1lDn0WAAD%2F%2F%2FWvXexgMwqgAAAAAElFTkSuQmCC
+[dotgibson-url]: https://github.com/dotgibson/dotfiles-Arch/releases/latest
+[ci-shield]: https://img.shields.io/github/actions/workflow/status/dotgibson/dotfiles-Arch/lint.yml?branch=main&style=flat-square&logo=githubactions&logoColor=white&label=CI
+[ci-url]: https://github.com/dotgibson/dotfiles-Arch/actions/workflows/lint.yml
+[lastcommit-shield]: https://img.shields.io/github/last-commit/dotgibson/dotfiles-Arch?branch=main&style=flat-square&logo=git&logoColor=white
+[contributors-shield]: https://img.shields.io/github/contributors/dotgibson/dotfiles-Arch.svg?style=flat-square&logo=github
+[contributors-url]: https://github.com/dotgibson/dotfiles-Arch/graphs/contributors
+[forks-shield]: https://img.shields.io/github/forks/dotgibson/dotfiles-Arch.svg?style=flat-square&logo=github
+[forks-url]: https://github.com/dotgibson/dotfiles-Arch/network/members
+[stars-shield]: https://img.shields.io/github/stars/dotgibson/dotfiles-Arch.svg?style=flat-square&logo=github
+[stars-url]: https://github.com/dotgibson/dotfiles-Arch/stargazers
+[issues-shield]: https://img.shields.io/github/issues/dotgibson/dotfiles-Arch?style=flat-square&logo=github
+[issues-url]: https://github.com/dotgibson/dotfiles-Arch/issues
+[showcase-shield]: https://img.shields.io/badge/showcase-live-7aa2f7?style=flat-square
+[showcase-url]: https://dotgibson.github.io/dotfiles-web
+[license-shield]: https://img.shields.io/github/license/dotgibson/dotfiles-Arch.svg?style=flat-square
+[license-url]: https://github.com/dotgibson/dotfiles-Arch/blob/main/LICENSE
+[linkedin-shield]: https://img.shields.io/badge/LinkedIn-blue?style=flat-square&logo=linkedin&logoColor=white
+[linkedin-url]: https://linkedin.com/in/garrettallen2
+[docs]: https://dotgibson.github.io/dotfiles-web/
