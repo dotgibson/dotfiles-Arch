@@ -21,6 +21,15 @@ tealdeer       # tldr (fast Rust client; binary: tldr)
 dust           # du   (HAVE_DUST in tools.zsh picks it up)
 procs          # ps   (HAVE_PROCS in tools.zsh picks it up)
 sd             # sed-alternative (nvim-spectre / scripts; parity with the Mac)
+duf            # df   (disk-usage/free viewer)
+gron           # greppable JSON  (gron | grep | gron -u)
+glow           # markdown renderer for the terminal
+gum            # charm's shell-script UI toolkit (prompts/spinners/pickers)
+xh             # HTTPie-style HTTP client (curl companion)
+go-yq          # yq — mikefarah's *Go* yq. Binary is `yq`. NOT the Arch `yq`
+               # package, which is the unrelated Python jq-for-YAML tool.
+# The rest of core-doctor's set (doggo, carapace, op, sesh) is not in the
+# official repos — those are AUR/go and are installed best-effort by bootstrap.sh.
 
 # ── prompt / history / runtime mgr / file mgr (in repos on Arch) ─
 starship       # prompt   (Fedora installs this from upstream; Arch packages it)
