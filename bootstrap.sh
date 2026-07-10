@@ -103,6 +103,36 @@ provision() {
   # official repos (extra), so they live in packages.txt — no upstream-installer
   # block here. That's the Arch payoff: one package manager, no curl|sh fallbacks.
 
+  # ── the few core-doctor tools NOT in the official repos (AUR / Go) ──────────
+  # doggo, carapace, sesh, op live only in the AUR. This bootstrap deliberately
+  # does NOT build an AUR helper (paru is a documented manual step below), so we
+  # install the three Go tools straight from source — best-effort, never fatal
+  # under `set -e`. If you already run paru, the native route is:
+  #   paru -S doggo-bin carapace-bin sesh-bin 1password-cli
+  # NOTE: `go install` drops binaries in $GOBIN (defaults to ~/go/bin), which is
+  # NOT on the shell PATH (the Core shell layer prefixes ~/.local/bin + ~/.cargo/
+  # bin). Pin GOBIN=~/.local/bin so the tools land somewhere already on PATH.
+  _dotfiles_go_install() { # <import-path@version> <binary-name>
+    if command -v "$2" >/dev/null 2>&1; then return 0; fi
+    local gobin="$HOME/.local/bin"; mkdir -p "$gobin"
+    if command -v go >/dev/null 2>&1; then GOBIN="$gobin" go install "$1" >/dev/null 2>&1 || true
+    elif command -v mise >/dev/null 2>&1; then GOBIN="$gobin" mise exec go@latest -- go install "$1" >/dev/null 2>&1 || true
+    else echo "   $2: needs Go — install later with: GOBIN=$gobin go install $1"; fi
+    return 0
+  }
+  blib_say "core-doctor extras not in Arch repos (best-effort via Go)"
+  _dotfiles_go_install github.com/mr-karan/doggo/cmd/doggo@latest doggo
+  _dotfiles_go_install github.com/carapace-sh/carapace-bin/cmd/carapace@latest carapace
+  _dotfiles_go_install github.com/joshmedeski/sesh/v2@latest sesh   # /v2 module path is required
+  # op (1Password CLI) is proprietary — no Go route. On Arch it's the AUR
+  # `1password-cli` package, whose PKGBUILD verifies AgileBits' PGP key
+  # 3FEF9748469ADBE15DA7CA80AC2D62742012EA22 (if the build complains, first run:
+  #   gpg --recv-keys 3FEF9748469ADBE15DA7CA80AC2D62742012EA22).
+  if ! command -v op >/dev/null 2>&1; then
+    echo "   op: 1Password CLI not found — install the AUR '1password-cli' pkg" \
+         "(e.g. 'paru -S 1password-cli') or see https://developer.1password.com/docs/cli"
+  fi
+
   # ── WSL: install /etc/wsl.conf (systemd + default user + interop) ───────────
   if ((IS_WSL)); then
     blib_say "installing /etc/wsl.conf (systemd + default user)"
