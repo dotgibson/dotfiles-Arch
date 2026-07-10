@@ -113,11 +113,19 @@ provision() {
   # NOT on the shell PATH (the Core shell layer prefixes ~/.local/bin + ~/.cargo/
   # bin). Pin GOBIN=~/.local/bin so the tools land somewhere already on PATH.
   _dotfiles_go_install() { # <import-path@version> <binary-name>
+    [ "$#" -ge 2 ] || return 0
     if command -v "$2" >/dev/null 2>&1; then return 0; fi
-    local gobin="$HOME/.local/bin"; mkdir -p "$gobin"
-    if command -v go >/dev/null 2>&1; then GOBIN="$gobin" go install "$1" >/dev/null 2>&1 || true
-    elif command -v mise >/dev/null 2>&1; then GOBIN="$gobin" mise exec go@latest -- go install "$1" >/dev/null 2>&1 || true
-    else echo "   $2: needs Go — install later with: GOBIN=$gobin go install $1"; fi
+    local gobin="$HOME/.local/bin"
+    mkdir -p "$gobin" 2>/dev/null || true
+    if command -v go >/dev/null 2>&1; then
+      GOBIN="$gobin" go install "$1" >/dev/null 2>&1 ||
+        echo "   $2: go install failed — retry later: GOBIN=$gobin go install $1"
+    elif command -v mise >/dev/null 2>&1; then
+      GOBIN="$gobin" mise exec go@latest -- go install "$1" >/dev/null 2>&1 ||
+        echo "   $2: go install failed — retry later: GOBIN=$gobin go install $1"
+    else
+      echo "   $2: needs Go — install later with: GOBIN=$gobin go install $1"
+    fi
     return 0
   }
   blib_say "core-doctor extras not in Arch repos (best-effort via Go)"
