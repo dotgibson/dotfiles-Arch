@@ -104,11 +104,12 @@ provision() {
   # block here. That's the Arch payoff: one package manager, no curl|sh fallbacks.
 
   # ── the few core-doctor tools NOT in the official repos (AUR / Go) ──────────
-  # doggo, carapace, sesh, op live only in the AUR. This bootstrap deliberately
-  # does NOT build an AUR helper (paru is a documented manual step below), so we
-  # install the three Go tools straight from source — best-effort, never fatal
-  # under `set -e`. If you already run paru, the native route is:
-  #   paru -S doggo-bin carapace-bin sesh-bin 1password-cli
+  # carapace, sesh, op live only in the AUR (doggo moved into `extra` — it's in
+  # packages.txt now). This bootstrap deliberately does NOT build an AUR helper
+  # (paru is a documented manual step below), so we install the two Go tools
+  # straight from source — best-effort, never fatal under `set -e`. If you
+  # already run paru, the native route is:
+  #   paru -S carapace-bin sesh-bin 1password-cli
   # NOTE: `go install` drops binaries in $GOBIN (defaults to ~/go/bin), which is
   # NOT on the shell PATH (the Core shell layer prefixes ~/.local/bin + ~/.cargo/
   # bin). Pin GOBIN=~/.local/bin so the tools land somewhere already on PATH.
@@ -129,7 +130,6 @@ provision() {
     return 0
   }
   blib_say "core-doctor extras not in Arch repos (best-effort via Go)"
-  _dotfiles_go_install github.com/mr-karan/doggo/cmd/doggo@latest doggo
   _dotfiles_go_install github.com/carapace-sh/carapace-bin/cmd/carapace@latest carapace
   _dotfiles_go_install github.com/joshmedeski/sesh/v2@latest sesh   # /v2 module path is required
   # op (1Password CLI) is proprietary — no Go route. On Arch it's the AUR
