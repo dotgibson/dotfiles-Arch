@@ -132,6 +132,7 @@ provision() {
   blib_say "core-doctor extras not in Arch repos (best-effort via Go)"
   _dotfiles_go_install github.com/carapace-sh/carapace-bin/cmd/carapace@latest carapace
   _dotfiles_go_install github.com/joshmedeski/sesh/v2@latest sesh   # /v2 module path is required
+  _dotfiles_go_install github.com/sachaos/viddy@latest viddy       # watch->viddy (HAVE_VIDDY-guarded)
   # op (1Password CLI) is proprietary — no Go route. On Arch it's the AUR
   # `1password-cli` package, whose PKGBUILD verifies AgileBits' PGP key
   # 3FEF9748469ADBE15DA7CA80AC2D62742012EA22 (if the build complains, first run:
