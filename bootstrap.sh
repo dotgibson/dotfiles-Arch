@@ -132,7 +132,14 @@ provision() {
   blib_say "core-doctor extras not in Arch repos (best-effort via Go)"
   _dotfiles_go_install github.com/carapace-sh/carapace-bin/cmd/carapace@latest carapace
   _dotfiles_go_install github.com/joshmedeski/sesh/v2@latest sesh   # /v2 module path is required
-  _dotfiles_go_install github.com/sachaos/viddy@latest viddy       # watch->viddy (HAVE_VIDDY-guarded)
+  # viddy (watch->viddy alias, HAVE_VIDDY-guarded) is a Rust CLI, AUR-only on Arch. This
+  # bootstrap builds no AUR helper and installs no rust toolchain (see packages.txt), so
+  # it's a manual step — like op below:
+  #   paru -S viddy      (or, with a rust toolchain: cargo install viddy)
+  if ! command -v viddy >/dev/null 2>&1; then
+    echo "   viddy: not found — install the AUR 'viddy' pkg (e.g. 'paru -S viddy')" \
+         "for the watch replacement, or 'cargo install viddy' with a rust toolchain"
+  fi
   # op (1Password CLI) is proprietary — no Go route. On Arch it's the AUR
   # `1password-cli` package, whose PKGBUILD verifies AgileBits' PGP key
   # 3FEF9748469ADBE15DA7CA80AC2D62742012EA22 (if the build complains, first run:
