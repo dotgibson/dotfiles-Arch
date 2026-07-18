@@ -32,6 +32,10 @@ go-yq          # yq — mikefarah's *Go* yq. Binary is `yq`. NOT the Arch `yq`
 # The rest of core-doctor's set is not in the official repos: carapace + sesh are
 # go-installed best-effort by bootstrap.sh; op (1Password CLI) is AUR-only, so
 # bootstrap just prints the paru/install hint rather than installing it.
+# The opt-in Core extras jujutsu/difftastic/ast-grep ARE in `extra` but are left
+# out by design — Core gates them on HAVE_JJ/HAVE_DIFFT/HAVE_ASTGREP, so a box
+# without them just skips the wiring. `pacman -S jujutsu difftastic ast-grep` to
+# enable.
 
 # ── prompt / history / runtime mgr / file mgr (in repos on Arch) ─
 starship       # prompt   (Fedora installs this from upstream; Arch packages it)
