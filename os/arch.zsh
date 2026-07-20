@@ -1,6 +1,6 @@
 # dotfiles-Arch/os/arch.zsh
 # ──────────────────────────────────────────────────────────────────────────────
-# The Arch OS-native shell layer. Symlinked to ~/.config/zsh/os.zsh and loaded
+# The Arch OS-native shell layer. Symlinked to ~/.config/zsh/80-os.zsh and loaded
 # AFTER Core (tools/aliases/functions). Arch-specific only.
 # Works on Arch desktop (Wayland/X11) AND ArchWSL.
 #

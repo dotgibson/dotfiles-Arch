@@ -131,7 +131,7 @@ prompt — comes from vendored Core; this repo owns the Arch specifics:
 
 - `bootstrap.sh` — `pacman` provision + Core/OS symlink wiring (idempotent)
 - `install/packages.txt` — the `pacman` package list (modern CLI stack)
-- `os/arch.zsh` — clipboard + package-manager aliases → `~/.config/zsh/os.zsh`
+- `os/arch.zsh` — clipboard + package-manager aliases → `~/.config/zsh/80-os.zsh`
 - `SETUP.md` — the from-scratch author walkthrough (mirrored on the hub)
 - `core/` — vendored from `dotfiles-core` (read-only here; edit upstream)
 
