@@ -18,8 +18,8 @@ fzf            # fuzzy finder
 git-delta      # git pager / diffs  (binary: delta)
 btop           # top/htop
 tealdeer       # tldr (fast Rust client; binary: tldr)
-dust           # du   (HAVE_DUST in tools.zsh picks it up)
-procs          # ps   (HAVE_PROCS in tools.zsh picks it up)
+dust           # du   (HAVE_DUST in 00-tools.zsh picks it up)
+procs          # ps   (HAVE_PROCS in 00-tools.zsh picks it up)
 sd             # sed-alternative (nvim-spectre / scripts; parity with the Mac)
 duf            # df   (disk-usage/free viewer)
 gron           # greppable JSON  (gron | grep | gron -u)
