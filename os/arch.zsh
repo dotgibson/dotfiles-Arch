@@ -14,17 +14,6 @@
 [[ -d "$HOME/.local/bin" && ":$PATH:" != *":$HOME/.local/bin:"* ]] && export PATH="$HOME/.local/bin${PATH:+:$PATH}"
 [[ -d "$HOME/.cargo/bin" && ":$PATH:" != *":$HOME/.cargo/bin:"* ]] && export PATH="$HOME/.cargo/bin${PATH:+:$PATH}"
 
-# ── Detect WSL once (for the niceties below) ──────────────────────────────────
-_IS_WSL=0
-if [[ -n "${WSL_DISTRO_NAME:-}" ]]; then
-  _IS_WSL=1
-elif [[ -r /proc/version ]]; then
-  # zsh reads the file directly (no grep/cat fork) — WSL kernels tag /proc/version.
-  _pv="$(</proc/version)"; _pv=${_pv:l}
-  [[ "$_pv" == *microsoft* || "$_pv" == *wsl* ]] && _IS_WSL=1
-  unset _pv
-fi
-
 # ── Clipboard: delegate to Core's cross-OS scripts (single implementation) ────
 command -v clip       >/dev/null && alias pbcopy='clip'
 command -v clip-paste >/dev/null && alias pbpaste='clip-paste'
@@ -44,7 +33,9 @@ command -v op >/dev/null 2>&1 && alias opsignin='eval "$(op signin)"'
 alias localip='ip -brief -4 addr show scope global'     # iface + LAN IP(s)
 
 # ── WSL-only niceties (interop reach-arounds into Windows) ───────────────────
-if (( _IS_WSL )); then
+# WSL detection is Core's: _core_is_wsl (core/zsh/00-tools.zsh, dotfiles-core#449),
+# lazily memoised, defined by band 00 and deliberately kept for this band-80 layer.
+if _core_is_wsl; then
   alias open='explorer.exe'                 # `open .` opens the dir in Explorer
   command -v wslview >/dev/null && alias xdg-open='wslview'
   # jump to your Windows user home: set WINHOME in 99-local.zsh, e.g.
@@ -121,8 +112,6 @@ alias fpi='flatpak install flathub'
 alias fpu='flatpak update'
 alias fps='flatpak search'
 alias fpl='flatpak list --app'
-
-unset _IS_WSL
 
 # ── auto-start/attach tmux for interactive terminals ─────────────────────────
 # Skip inside an existing tmux, VS Code's integrated terminal, and non-TTYs.
