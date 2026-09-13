@@ -18,11 +18,11 @@ DOTFILES="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CONFIG="${XDG_CONFIG_HOME:-$HOME/.config}"
 LINKS_ONLY=0
 DO_FLATPAK=1
-# Packages that could not be installed, collected by provision() so the run can
-# finish wiring the box and THEN report honestly + exit non-zero. Half-provisioning
-# silently (the old behaviour) is the worse failure: you get a green run and a
-# machine missing tools you only discover days later.
-PROVISION_FAILED=()
+# Packages and tools that could not be installed are recorded in Core's ledger
+# (blib_note_fail, core/lib/bootstrap-lib.sh) so the run can finish wiring the box and
+# THEN report honestly + exit non-zero. Half-provisioning silently (the old behaviour) is
+# the worse failure: you get a green run and a machine missing tools you only discover
+# days later. The ledger also holds what the shared lib records itself (the tpm clone).
 
 usage() {
   cat <<'EOF'
@@ -42,8 +42,9 @@ Module groups (for --only/--skip): zsh nvim tmux git prompt tools
   --only and --skip are given, --only wins (it is an allowlist).
 
 Env overrides:
-  BLIB_SU     privilege escalator (default: sudo; set empty when already root,
-              or `doas` on a box without sudo)
+  BLIB_SU     privilege escalator. Resolved by Core's blib_resolve_su when unset:
+              root runs directly, else sudo, else doas. Set it empty or to `doas`
+              to override the probe.
   BLIB_DRY    set to 1 for the same effect as --dry-run
   SESH_VERSION
               Go module version for sesh, the one tool built from source here
@@ -155,6 +156,18 @@ if ! grep -qE '^ID=arch$' /etc/os-release 2>/dev/null; then
   fi
 fi
 
+# ── privilege escalation: Core's blib_resolve_su, not a default of `sudo` ─────
+# Decides "root" from $EUID, pins the ABSOLUTE path of sudo or doas, and honours an
+# explicit BLIB_SU= from the caller — which is what core's bootstrap-test.yml sets, since
+# Arch base images ship no sudo. --require only when packages will actually be installed:
+# wiring symlinks and a dry run need no privileges. Everything privileged below then goes
+# through blib_priv, the lib's PUBLIC wrapper over the same value.
+if ((LINKS_ONLY)) || ((BLIB_DRY)); then
+  blib_resolve_su || true
+else
+  blib_resolve_su --require || exit 1
+fi
+
 IS_WSL=0
 if blib_is_wsl; then IS_WSL=1; fi
 
@@ -164,11 +177,11 @@ provision() {
   # pull a package built against newer libs than your unupgraded system has. The
   # correct pattern is a full `-Syu` FIRST so the box is current before installs.
   #
-  # Privilege goes through the lib's _blib_priv, NOT a hardcoded `sudo`: that
-  # honours BLIB_SU, so this works as root (BLIB_SU=) and on a doas-only box
-  # (BLIB_SU=doas). It is also what makes provision() runnable in a container —
-  # Arch base images ship no sudo, which is exactly why core's bootstrap-test.yml
-  # has to set BLIB_SU= before invoking this script.
+  # Privilege goes through the lib's blib_priv (its public name for the wrapper), NOT
+  # a hardcoded `sudo`: it runs under the BLIB_SU that blib_resolve_su pinned above, so
+  # this works as root (BLIB_SU=) and on a doas-only box. It is also what makes
+  # provision() runnable in a container — Arch base images ship no sudo, which is
+  # exactly why core's bootstrap-test.yml has to set BLIB_SU= before invoking this script.
 
   local -a pkgs=()
   mapfile -t pkgs < <(blib_read_pkgs "$DOTFILES/install/packages.txt")
@@ -192,15 +205,24 @@ provision() {
     return 0
   fi
 
+  # Core's sudo keepalive: prime once with the prompt visible, refresh in the background
+  # so the go builds below cannot leave a later `sudo` blocked at an invisible prompt.
+  # A no-op for doas and for root. This function owns the EXIT trap that stops it.
+  trap 'blib_sudo_keepalive_stop' EXIT
+  blib_sudo_keepalive_start || {
+    echo "sudo authentication failed — cannot provision packages." >&2
+    exit 1
+  }
+
   blib_say "pacman full system sync + upgrade (-Syu)"
-  _blib_priv pacman -Syu --noconfirm
+  blib_priv pacman -Syu --noconfirm
 
   blib_say "pacman packages (${#pkgs[@]} from install/packages.txt)"
   # Unlike dnf's --skip-unavailable, pacman aborts the WHOLE transaction if any
   # single target name is wrong. Try the bulk install with --needed (skips
   # already-installed), and on failure fall back to a per-package loop so one bad
   # name can't sink the rest. (System is current from -Syu, so -S is not partial.)
-  if _blib_priv pacman -S --needed --noconfirm "${pkgs[@]}"; then
+  if blib_priv pacman -S --needed --noconfirm "${pkgs[@]}"; then
     blib_ok "pacman packages installed (${#pkgs[@]} requested)"
   else
     blib_say "bulk install hit a snag — retrying package-by-package (resilient)"
@@ -209,10 +231,11 @@ provision() {
       # Record rather than discard. Arch is a ROLLING release: packages get
       # renamed and dropped between runs, and a silently-skipped name is how a
       # box ends up missing a tool with a green bootstrap behind it.
-      _blib_priv pacman -S --needed --noconfirm "$p" || PROVISION_FAILED+=("$p")
+      blib_priv pacman -S --needed --noconfirm "$p" ||
+        blib_note_fail "package '$p' — did not install; on a rolling release that usually means a rename or a drop: pacman -Ss $p"
     done
-    if ((${#PROVISION_FAILED[@]})); then
-      blib_warn "${#PROVISION_FAILED[@]} package(s) failed to install (see the summary at the end)"
+    if (($(blib_failed_count))); then
+      blib_warn "$(blib_failed_count) package(s) failed to install (see the summary at the end)"
     else
       blib_ok "per-package install pass complete (all succeeded)"
     fi
@@ -257,12 +280,12 @@ provision() {
     # way to find out why it failed.
     if command -v go >/dev/null 2>&1; then
       GOBIN="$gobin" go install "$spec" >>"$go_log" 2>&1 ||
-        echo "   $3: go install failed — see $go_log; retry: GOBIN=$gobin go install $spec"
+        blib_note_fail "$3 — go install failed; see $go_log; retry: GOBIN=$gobin go install $spec"
     elif command -v mise >/dev/null 2>&1; then
       GOBIN="$gobin" mise exec go@latest -- go install "$spec" >>"$go_log" 2>&1 ||
-        echo "   $3: go install failed — see $go_log; retry: GOBIN=$gobin go install $spec"
+        blib_note_fail "$3 — go install failed; see $go_log; retry: GOBIN=$gobin go install $spec"
     else
-      echo "   $3: needs Go — install later with: GOBIN=$gobin go install $spec"
+      blib_note_fail "$3 — needs Go; install later with: GOBIN=$gobin go install $spec"
     fi
     return 0
   }
@@ -327,7 +350,8 @@ provision() {
   if ((DO_FLATPAK)) && ! ((IS_WSL)); then
     blib_say "Flathub"
     flatpak remote-add --if-not-exists flathub \
-      https://flathub.org/repo/flathub.flatpakrepo >/dev/null 2>&1 || true
+      https://flathub.org/repo/flathub.flatpakrepo >/dev/null 2>&1 ||
+      blib_note_fail "Flathub remote — could not be added; retry: flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo"
   fi
 
   # ── Optional, NOT automated (documented manual steps) ──────────────────────
@@ -372,10 +396,10 @@ install_wsl_conf() {
   blib_say "installing /etc/wsl.conf (systemd + default user)"
   if [[ -e /etc/wsl.conf ]]; then
     backup="/etc/wsl.conf.pre-dotfiles.$(date +%s)"
-    _blib_priv cp -a /etc/wsl.conf "$backup"
+    blib_priv cp -a /etc/wsl.conf "$backup"
     blib_warn "existing /etc/wsl.conf backed up to $backup — re-apply any local settings from it"
   fi
-  printf '%s\n' "$rendered" | _blib_priv tee /etc/wsl.conf >/dev/null
+  printf '%s\n' "$rendered" | blib_priv tee /etc/wsl.conf >/dev/null
   blib_ok "wsl.conf written — run 'wsl.exe --shutdown' from Windows, then reopen, to apply"
 }
 
@@ -397,7 +421,10 @@ wire_links() {
   blib_wire_summary
 }
 
-((LINKS_ONLY)) || provision
+if ((LINKS_ONLY == 0)); then
+  provision
+  blib_sudo_keepalive_stop
+fi
 wire_links
 
 # ── final report ──────────────────────────────────────────────────────────────
@@ -406,10 +433,11 @@ if _blib_dry; then
   exit 0
 fi
 
-if ((${#PROVISION_FAILED[@]})); then
-  blib_warn "bootstrap finished WIRING, but ${#PROVISION_FAILED[@]} package(s) did not install:"
-  printf '      %s\n' "${PROVISION_FAILED[@]}" >&2
-  blib_warn "on a rolling release this usually means a rename or a drop — check with"
+# blib_failures_report prints the ledger (packages, go installs, Flathub, and what the
+# shared lib recorded itself) and returns non-zero when there was anything in it. The
+# box is WIRED by now; exit 1 is the honest answer, as it always was here.
+if ! blib_failures_report; then
+  blib_warn "on a rolling release a package that did not install usually means a rename or a drop — check with"
   blib_warn "  pacman -Ss <name>   /   https://archlinux.org/packages/  and update install/packages.txt"
   exit 1
 fi
