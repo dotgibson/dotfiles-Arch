@@ -167,6 +167,19 @@ Entries below therefore cover the **Arch OS-native layer only**: `bootstrap.sh`,
 
 ### Changed
 
+- **`bootstrap.sh` runs on Core's escalation, sudo-keepalive and failure-tally helpers**
+  (dotgibson/dotfiles-core#973). It had no root check at all — it leaned on the lib's
+  default of `sudo` through `_blib_priv`, an underscore-private symbol — and its ledger held
+  one kind of miss (a pacman package). Now `blib_resolve_su` pins the escalator up front
+  (root runs directly, else `sudo`, else `doas`; an explicit `BLIB_SU=` still wins, which is
+  what CI sets), every privileged line goes through the lib's public `blib_priv`,
+  `blib_sudo_keepalive_start` / `_stop` keep the timestamp warm across the go builds, and
+  `blib_note_fail` records the per-package misses, the go installs and the Flathub remote
+  alongside what the shared lib records itself. `blib_failures_report` prints the tally and
+  the exit code stays 1 when there was anything in it — Arch's contract, unchanged. The
+  carapace / viddy / op lines stay as the deliberate manual-step hints they are. Closes this
+  repo's four rows in Core's `audit-core.sh` §5f ledger.
+
 - **`make core-lock` no longer regenerates `core.lock`; it explains why and points at the
   fan-out.** (dotgibson/dotfiles-core#593) The target was added here to satisfy
   `core.lock`'s own header instruction, “Regenerate … with: `make core-lock`”. That

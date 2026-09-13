@@ -17,7 +17,7 @@ distro. When you stamp openSUSE / Alpine / Gentoo, copy this file and swap Stage
 
 A clean Arch install (manual, or ArchWSL on first launch) drops you at a **root**
 prompt with no user, no `sudo`, and no `git`. `bootstrap.sh` clones nothing but
-calls `sudo` everywhere, so none of it can run until you create a wheel user with
+escalates with `sudo` everywhere, so none of it can run until you create a wheel user with
 `sudo` and install `git`. Do this first, **as root**:
 
 > **The one sanctioned `-Sy` in this entire system.** Everything else here —
