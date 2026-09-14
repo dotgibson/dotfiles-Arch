@@ -19,8 +19,8 @@
       bootstrap dry-run in one go)
 - [ ] If `install/packages.txt` changed: `make packages-check` resolves every name
 - [ ] If `bootstrap.sh` changed: `./bootstrap.sh --dry-run` previews correctly, and
-      the change was exercised on a real Arch box or container (CI only covers
-      `--links-only`, never `provision()`)
+      the change was exercised on a real Arch box or container (CI covers
+      `--links-only` and a stubbed `bootstrap_provision()`, never a real install)
 - [ ] `CHANGELOG.md` updated under `[Unreleased]` for any user-visible change,
       with a [Conventional Commits](https://www.conventionalcommits.org/) message
 

@@ -167,6 +167,20 @@ Entries below therefore cover the **Arch OS-native layer only**: `bootstrap.sh`,
 
 ### Changed
 
+- **`bootstrap.sh` runs on Core's bootstrap driver** (dotgibson/dotfiles-core#976, #986;
+  vendored here since v7.4.0). The file now declares what it is (`BOOTSTRAP_OS=arch`,
+  `BOOTSTRAP_STRICT_DEFAULT=1` — a package that did not install is exit 1, always, as
+  before) and defines the hooks that are Arch's: the Arch check and the `--only`/`--skip`
+  note as `bootstrap_guard`, the pacman phase as `bootstrap_provision` (body unchanged:
+  `-Syu` first, bulk `--needed` then per-package, the Go builds, the AUR hints, wsl.conf,
+  Flathub), the dry-run preview as `bootstrap_check`, `--no-flatpak` as `bootstrap_flag`,
+  the rolling-release hints as `bootstrap_closing`. The flag loop, the escalator, the sudo
+  keepalive, the symlink surface, the managed `~/.zshrc`, the login shell and the closing
+  report come from `core/lib/bootstrap-lib.sh :: blib_main`. The `-E` ERR trap stays and
+  now steps aside for the driver's own `return` verdicts. 446 → 421 lines. Two visible
+  changes: an unknown flag exits **2** (the driver's usage-error code; it was 1), and
+  `--strict` is accepted as a no-op spelling of the default.
+
 - **`bootstrap.sh` runs on Core's escalation, sudo-keepalive and failure-tally helpers**
   (dotgibson/dotfiles-core#973). It had no root check at all — it leaned on the lib's
   default of `sudo` through `_blib_priv`, an underscore-private symbol — and its ledger held

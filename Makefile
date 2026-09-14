@@ -110,12 +110,13 @@ bootstrap-dry: dry-run ## Alias for `dry-run` (the spelling this repo used befor
 
 # `check` is the full LOCAL gate: everything that can be run before pushing without
 # changing the box. lint is the CI gate verbatim, test is the test/ suite, and the
-# dry-run proves bootstrap.sh's whole plan still builds — provision() included, which no
-# workflow ever executes (bootstrap.yml runs --links-only; see CLAUDE.md).
+# dry-run proves bootstrap.sh's plan still builds — the package list parses and the
+# preview in bootstrap_check() renders (the driver never enters bootstrap_provision()
+# dry; bootstrap.yml runs that with pacman stubbed; see CLAUDE.md).
 #
 # DELIBERATELY NOT a hermetic `HOME=$$(mktemp -d) ./bootstrap.sh --links-only`, which is
 # what dotfiles-Debian and dotfiles-Fedora's `check` do. That run is only hermetic in
-# $HOME: wire_links ends in blib_set_login_shell, which appends to /etc/shells and calls
+# $HOME: the driver's wiring ends in blib_set_login_shell, which appends to /etc/shells and calls
 # `chsh` under sudo on any box whose login shell is not already zsh. A local check that
 # can change your login shell is not one people run twice. --dry-run reaches the same
 # code with BLIB_DRY=1 and touches nothing.

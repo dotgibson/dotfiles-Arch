@@ -5,26 +5,50 @@
 # Idempotent — safe to re-run. This is the OS-NATIVE layer; Core (zsh/tmux/nvim/
 # git) is vendored under core/ and symlinked in via core/lib/bootstrap-lib.sh.
 #
-# Run `./bootstrap.sh --help` for usage — see usage() below, which is the single
-# definition (deliberately NOT `sed -n '2,17p' "$0"`: that form couples --help to
-# this banner's line numbers, so editing the header silently drifts the help text.
-# core/scripts/sync-core.sh records the same fix for the same reason.)
+# SHAPE (dotgibson/dotfiles-core#976): this file DECLARES what it is and DEFINES the
+# hooks that are Arch's, then hands over to Core's bootstrap driver, blib_main — the
+# shared skeleton every bootstrap.sh in the fleet used to carry by hand (the flag loop,
+# the escalator, the sudo keepalive, the Core symlink surface + the OS overlays, the
+# managed ~/.zshrc loader, the login shell, the closing report) runs from ONE definition
+# in core/lib/bootstrap-lib.sh. What stays here: the Arch check, the pacman phase, the
+# dry-run preview, /etc/wsl.conf, and the rolling-release hints in the closing report.
+#
+# Run `./bootstrap.sh --help` for usage — bootstrap_usage() below is this repo's half
+# of it (deliberately NOT `sed -n '2,17p' "$0"`: that form couples --help to this
+# banner's line numbers, so editing the header silently drifts the help text); the
+# driver appends the shared flags.
 # ──────────────────────────────────────────────────────────────────────────────
 # `-E` (errtrace) so the ERR trap below fires inside functions too, not just at
-# the top level — without it a failure inside provision() aborts with no context.
+# the top level — without it a failure inside bootstrap_provision() aborts with no
+# context. The driver adds only an EXIT trap (around provisioning, for the keepalive),
+# so the two compose.
 set -eEuo pipefail
 
 DOTFILES="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CONFIG="${XDG_CONFIG_HOME:-$HOME/.config}"
-LINKS_ONLY=0
 DO_FLATPAK=1
+
+# ── what this bootstrap IS (read by blib_main) ────────────────────────────────
 # Packages and tools that could not be installed are recorded in Core's ledger
 # (blib_note_fail, core/lib/bootstrap-lib.sh) so the run can finish wiring the box and
 # THEN report honestly + exit non-zero. Half-provisioning silently (the old behaviour) is
 # the worse failure: you get a green run and a machine missing tools you only discover
 # days later. The ledger also holds what the shared lib records itself (the tpm clone).
+# STRICT_DEFAULT=1 is that contract, declared: a package that did not install is exit 1
+# here, ALWAYS — there is no --tolerate flag on a rolling release, where a silently
+# skipped name is a rename or a drop you need to know about.
+# shellcheck disable=SC2034  # read by the vendored driver, which shellcheck cannot see
+BOOTSTRAP_NAME="Arch"
+# shellcheck disable=SC2034
+BOOTSTRAP_OS=arch
+# shellcheck disable=SC2034
+BOOTSTRAP_STRICT_DEFAULT=1
+# shellcheck disable=SC2034
+BLIB_STRICT_WHY="a package that did not install is exit 1 here, always"
 
-usage() {
+# The Arch half of --help; the driver prints the shared flags after it.
+# shellcheck disable=SC2329  # called by the vendored driver
+bootstrap_usage() {
   cat <<'EOF'
 bootstrap.sh — provision an Arch box (desktop or WSL/ArchWSL) and wire up dotfiles.
 
@@ -41,6 +65,9 @@ Module groups (for --only/--skip): zsh nvim tmux git prompt tools
   --links-only to re-wire a subset of configs without touching pacman. If both
   --only and --skip are given, --only wins (it is an allowlist).
 
+Exit codes: 0 wired and every install completed · 1 wired, but something did not
+  install (listed above the exit line — this repo never tolerates a miss) · 2 usage.
+
 Env overrides:
   BLIB_SU     privilege escalator. Resolved by Core's blib_resolve_su when unset:
               root runs directly, else sudo, else doas. Set it empty or to `doas`
@@ -48,29 +75,19 @@ Env overrides:
   BLIB_DRY    set to 1 for the same effect as --dry-run
   SESH_VERSION
               Go module version for sesh, the one tool built from source here
-              (default: latest — see the note in provision())
+              (default: latest — see the note in bootstrap_provision())
 EOF
 }
 
-# --only/--skip are validated by the shared lib (blib_select), sourced AFTER this
-# loop — capture the raw values now and apply them below.
-ONLY_RAW=""; SKIP_RAW=""; ONLY_SEEN=0; SKIP_SEEN=0
-
-while [[ $# -gt 0 ]]; do case "$1" in
-  --links-only) LINKS_ONLY=1 ;;
-  --dry-run | -n) BLIB_DRY=1 ;;
-  --no-flatpak) DO_FLATPAK=0 ;;
-  --only) [[ $# -ge 2 ]] || { echo "--only requires module names, e.g. --only zsh,nvim" >&2; exit 1; }; ONLY_RAW="$2"; ONLY_SEEN=1; shift ;;
-  --only=*) ONLY_RAW="${1#*=}"; ONLY_SEEN=1 ;;
-  --skip) [[ $# -ge 2 ]] || { echo "--skip requires module names, e.g. --skip tmux" >&2; exit 1; }; SKIP_RAW="$2"; SKIP_SEEN=1; shift ;;
-  --skip=*) SKIP_RAW="${1#*=}"; SKIP_SEEN=1 ;;
-  -h | --help) usage; exit 0 ;;
-  *) echo "unknown arg: $1" >&2; echo "try: $0 --help" >&2; exit 1 ;;
-esac; shift; done
-
-# BLIB_DRY must exist before the lib is sourced (the lib reads it with :- defaults,
-# so this is belt-and-braces) and is exported so anything we shell out to agrees.
-export BLIB_DRY="${BLIB_DRY:-0}"
+# The one flag that is Arch's. The driver owns the rest and exits 2 on anything
+# neither of us knows.
+# shellcheck disable=SC2329
+bootstrap_flag() { # <arg> [<next>] → 0 consumed, 1 not mine
+  case "$1" in
+  --no-flatpak) DO_FLATPAK=0; return 0 ;;
+  esac
+  return 1
+}
 
 # ── vendored core/ present? (inline: can't source a lib out of core/ before this) ─
 # Validate the SPECIFIC paths we depend on (zsh modules + the two libs sourced
@@ -94,26 +111,6 @@ source "$DOTFILES/core/lib/ux.sh"
 # shellcheck source=core/lib/bootstrap-lib.sh
 source "$DOTFILES/core/lib/bootstrap-lib.sh"
 
-# ── PATH prelude: make the presence guards below tell the TRUTH ───────────────
-# bootstrap runs in BASH, before any Core shell exists. ~/.local/bin (this script's GOBIN)
-# and ~/.cargo/bin reach PATH only via core/zsh/00-tools.zsh and os/arch.zsh, i.e. only
-# inside a Core zsh — so `command -v <tool>` here was answered by the PATH of whatever
-# shell launched the bootstrap, which on a fresh box is bash with none of them.
-#
-# Concretely: _dotfiles_go_install's `command -v "$3"` guard could never see a tool an
-# EARLIER run had installed into ~/.local/bin, so every bootstrap re-ran every go install.
-# Arch escapes the worse half of this only by luck — pacman puts mise in /usr/bin, so the
-# `command -v mise` fallback arm resolves. The repos where mise comes from mise.run instead
-# had that arm silently fail against a mise they had just installed, and openSUSE shipped a
-# bootstrap that exited 2 on every run because of it (dotgibson/dotfiles-core#748).
-#
-# blib_user_bindirs_on_path is Core's helper for exactly this (core/lib/bootstrap-lib.sh),
-# resolving CARGO_HOME and GOBIN/GOPATH rather than hard-coding them. It adds only
-# directories that EXIST, so on a box whose ~/.local/bin is first created by the go
-# installs themselves it takes effect from the next run — which is precisely the run that
-# was doing the redundant work.
-blib_user_bindirs_on_path
-
 # Fail LOUD and located. Under `set -e` a mid-run failure used to abort with no
 # indication of where — on a fresh box, mid-`pacman`, that is the difference
 # between "retry the one step" and "start over".
@@ -123,55 +120,84 @@ blib_user_bindirs_on_path
 # EOF inside blib_read_pkgs' while-loop runs in the `< <(…)` subshell. Without the
 # guard every single run printed a spurious "bootstrap FAILED … IFS= read -r line".
 # Only the main shell can actually be failing the bootstrap.
+#
+# A `return N` is not a crash either: the driver hands its verdict up that way — 2 for
+# a usage error, BOOTSTRAP_FAIL_EXIT after the closing report — and it has already
+# said why. `set -e` still ends the script with that status; this trap only stays out
+# of the way.
 _bootstrap_err() {
   local rc="$1" line="$2" cmd="$3"
   ((BASH_SUBSHELL > 0)) && return 0
+  [[ "$cmd" == return* ]] && return 0
   blib_warn "bootstrap FAILED (exit $rc) at ${BASH_SOURCE[0]}:${line}: ${cmd}"
   exit "$rc"
 }
 trap '_bootstrap_err "$?" "$LINENO" "$BASH_COMMAND"' ERR
 
-# Apply any --only/--skip module selection now the validator (blib_select) exists;
-# it aborts on a malformed selector or an unknown group.
-if ((ONLY_SEEN)); then blib_select --only "$ONLY_RAW"; fi
-if ((SKIP_SEEN)); then blib_select --skip "$SKIP_RAW"; fi
-# blib_want treats --only as an allowlist that WINS, so a --skip alongside it is
-# silently inert. Say so rather than letting the user believe both applied.
-if ((ONLY_SEEN)) && ((SKIP_SEEN)); then
-  blib_warn "both --only and --skip given: --only is an allowlist and WINS; --skip '$SKIP_RAW' is ignored"
-fi
-
-# ── sanity: confirm we're on Arch ─────────────────────────────────────────────
-# Match the ID line specifically so we don't false-positive on a distro that
-# merely mentions "arch" in its NAME/pretty string. (ArchWSL keeps ID=arch.)
-# Arch DERIVATIVES (EndeavourOS, Manjaro, CachyOS) set their own ID but carry
-# ID_LIKE=arch and a working pacman, so they are accepted with a warning rather
-# than refused — the package list and every alias in os/arch.zsh still apply.
-if ! grep -qE '^ID=arch$' /etc/os-release 2>/dev/null; then
-  if grep -qE '^ID_LIKE=.*\barch\b' /etc/os-release 2>/dev/null; then
-    blib_warn "not Arch proper, but ID_LIKE=arch (a derivative) — continuing; packages.txt assumes Arch repo names"
-  else
-    echo "This bootstrap targets Arch Linux. /etc/os-release doesn't look like Arch (no 'ID=arch' or 'ID_LIKE=...arch...')." >&2
-    exit 1
+# ── guard: the Arch check, and the --only/--skip note ─────────────────────────
+# Runs after the driver has parsed the flags and applied --only/--skip, before
+# anything is resolved or written.
+# shellcheck disable=SC2329
+bootstrap_guard() {
+  # blib_want treats --only as an allowlist that WINS, so a --skip alongside it is
+  # silently inert. Say so rather than letting the user believe both applied.
+  if [[ -n "${BLIB_ONLY:-}" && -n "${BLIB_SKIP:-}" ]]; then
+    blib_warn "both --only and --skip given: --only is an allowlist and WINS; --skip '$BLIB_SKIP' is ignored"
   fi
-fi
 
-# ── privilege escalation: Core's blib_resolve_su, not a default of `sudo` ─────
-# Decides "root" from $EUID, pins the ABSOLUTE path of sudo or doas, and honours an
-# explicit BLIB_SU= from the caller — which is what core's bootstrap-test.yml sets, since
-# Arch base images ship no sudo. --require only when packages will actually be installed:
-# wiring symlinks and a dry run need no privileges. Everything privileged below then goes
-# through blib_priv, the lib's PUBLIC wrapper over the same value.
-if ((LINKS_ONLY)) || ((BLIB_DRY)); then
-  blib_resolve_su || true
-else
-  blib_resolve_su --require || exit 1
-fi
+  # ── sanity: confirm we're on Arch ─────────────────────────────────────────────
+  # Match the ID line specifically so we don't false-positive on a distro that
+  # merely mentions "arch" in its NAME/pretty string. (ArchWSL keeps ID=arch.)
+  # Arch DERIVATIVES (EndeavourOS, Manjaro, CachyOS) set their own ID but carry
+  # ID_LIKE=arch and a working pacman, so they are accepted with a warning rather
+  # than refused — the package list and every alias in os/arch.zsh still apply.
+  if ! grep -qE '^ID=arch$' /etc/os-release 2>/dev/null; then
+    if grep -qE '^ID_LIKE=.*\barch\b' /etc/os-release 2>/dev/null; then
+      blib_warn "not Arch proper, but ID_LIKE=arch (a derivative) — continuing; packages.txt assumes Arch repo names"
+    else
+      echo "This bootstrap targets Arch Linux. /etc/os-release doesn't look like Arch (no 'ID=arch' or 'ID_LIKE=...arch...')." >&2
+      exit 1
+    fi
+  fi
+}
 
 IS_WSL=0
 if blib_is_wsl; then IS_WSL=1; fi
 
-provision() {
+# ── the package list, parsed once per phase ───────────────────────────────────
+# blib_read_pkgs' exit status is LOST inside the process substitution, so a missing or
+# empty packages.txt yields an empty array rather than an error. Left unchecked,
+# `pacman -S` with zero targets fails, the per-package fallback loops zero times, and
+# the run reports success having installed NOTHING. Fail here — on the preview too.
+PKGS=()
+_arch_packages() {
+  mapfile -t PKGS < <(blib_read_pkgs "$DOTFILES/install/packages.txt")
+  if ((${#PKGS[@]} == 0)); then
+    blib_warn "no packages parsed from $DOTFILES/install/packages.txt (missing, empty, or all comments) — refusing to continue"
+    exit 1
+  fi
+}
+
+# ── the dry-run preview (report-only; the driver never enters provisioning dry) ─
+# The driver calls this on every non-links-only run; a real run has nothing to
+# preview, so it is the dry plan only.
+# shellcheck disable=SC2329
+bootstrap_check() {
+  _blib_dry || return 0
+  _arch_packages
+  blib_say "would run: pacman -Syu, then install ${#PKGS[@]} packages from install/packages.txt"
+  blib_say "would install: ${PKGS[*]}"
+  # Spelled as `if` blocks, not `((x)) && say …`: under `set -e` + the ERR trap a
+  # false guard makes the whole && list return non-zero, which is exactly the kind
+  # of "failed but harmless" status this script reports loudly.
+  if ((IS_WSL)); then install_wsl_conf; fi
+  if ((DO_FLATPAK)) && ! ((IS_WSL)); then blib_say "would add the Flathub remote"; fi
+  return 0
+}
+
+# ── the pacman phase (full runs only; the driver runs it under the sudo keepalive) ─
+# shellcheck disable=SC2329
+bootstrap_provision() {
   # ── Arch golden rule: NEVER partial-upgrade ────────────────────────────────
   # `pacman -Sy <pkg>` (refresh without -u) is the classic Arch footgun: it can
   # pull a package built against newer libs than your unupgraded system has. The
@@ -183,36 +209,10 @@ provision() {
   # provision() runnable in a container — Arch base images ship no sudo, which is
   # exactly why core's bootstrap-test.yml has to set BLIB_SU= before invoking this script.
 
+
   local -a pkgs=()
-  mapfile -t pkgs < <(blib_read_pkgs "$DOTFILES/install/packages.txt")
-  # blib_read_pkgs' exit status is LOST inside the process substitution, so a
-  # missing or empty packages.txt yields an empty array rather than an error. Left
-  # unchecked, `pacman -S` with zero targets fails, the per-package fallback loops
-  # zero times, and the run reports success having installed NOTHING. Fail here.
-  if ((${#pkgs[@]} == 0)); then
-    blib_warn "no packages parsed from $DOTFILES/install/packages.txt (missing, empty, or all comments) — refusing to continue"
-    exit 1
-  fi
-
-  if _blib_dry; then
-    blib_say "would run: pacman -Syu, then install ${#pkgs[@]} packages from install/packages.txt"
-    blib_say "would install: ${pkgs[*]}"
-    # Spelled as `if` blocks, not `((x)) && say …`: under `set -e` + the ERR trap a
-    # false guard makes the whole && list return non-zero, which is exactly the kind
-    # of "failed but harmless" status this script now reports loudly.
-    if ((IS_WSL)); then install_wsl_conf; fi
-    if ((DO_FLATPAK)) && ! ((IS_WSL)); then blib_say "would add the Flathub remote"; fi
-    return 0
-  fi
-
-  # Core's sudo keepalive: prime once with the prompt visible, refresh in the background
-  # so the go builds below cannot leave a later `sudo` blocked at an invisible prompt.
-  # A no-op for doas and for root. This function owns the EXIT trap that stops it.
-  trap 'blib_sudo_keepalive_stop' EXIT
-  blib_sudo_keepalive_start || {
-    echo "sudo authentication failed — cannot provision packages." >&2
-    exit 1
-  }
+  _arch_packages
+  pkgs=("${PKGS[@]}")
 
   blib_say "pacman full system sync + upgrade (-Syu)"
   blib_priv pacman -Syu --noconfirm
@@ -403,44 +403,19 @@ install_wsl_conf() {
   blib_ok "wsl.conf written — run 'wsl.exe --shutdown' from Windows, then reopen, to apply"
 }
 
-wire_links() {
-  # The shared symlink surface + the Arch OS overlays + the managed .zshrc loader
-  # + the default-login-shell switch all live in core/lib/bootstrap-lib.sh.
-  blib_link_core "$DOTFILES" "$CONFIG"
-  blib_link_os_layer "$DOTFILES" "$CONFIG" arch
-  # shellcheck disable=SC2119  # no args is intentional — writes the default module set
-  blib_write_zshrc_loader
-  blib_set_login_shell
-  # Install the local pre-commit hook that refuses commits touching the
-  # vendored core/. core-integrity.yml catches this at PR time; this catches it at
-  # COMMIT time, on a fresh clone, before the mistake is ever pushed. Never fatal:
-  # the helper returns non-zero when it can't resolve a hooks dir, and a missing
-  # guard must not fail a bootstrap.
-  _blib_dry || blib_install_core_guard "$DOTFILES" || true
-  blib_ok "symlinks wired$(blib_selected_note)"
-  blib_wire_summary
+# ── closing: the rolling-release hints, under the driver's report ─────────────
+# The driver prints the ledger (packages, go installs, Flathub, and what the shared
+# lib recorded itself) and, with STRICT_DEFAULT=1, exits 1 when there was anything in
+# it. The box is WIRED by then; exit 1 is the honest answer, as it always was here.
+# shellcheck disable=SC2329
+bootstrap_closing() { # <degraded 0|1>
+  # shellcheck disable=SC2034  # read by the driver's closing line
+  BLIB_NEXT_HINT="open a new shell or: exec zsh — then verify with:  core-doctor    (and  core-version  for the vendored Core)"
+  if (($1)); then
+    blib_warn "on a rolling release a package that did not install usually means a rename or a drop — check with"
+    blib_warn "  pacman -Ss <name>   /   https://archlinux.org/packages/  and update install/packages.txt"
+  fi
+  return 0
 }
 
-if ((LINKS_ONLY == 0)); then
-  provision
-  blib_sudo_keepalive_stop
-fi
-wire_links
-
-# ── final report ──────────────────────────────────────────────────────────────
-if _blib_dry; then
-  blib_ok "dry run complete — nothing was changed. Re-run without --dry-run to apply."
-  exit 0
-fi
-
-# blib_failures_report prints the ledger (packages, go installs, Flathub, and what the
-# shared lib recorded itself) and returns non-zero when there was anything in it. The
-# box is WIRED by now; exit 1 is the honest answer, as it always was here.
-if ! blib_failures_report; then
-  blib_warn "on a rolling release a package that did not install usually means a rename or a drop — check with"
-  blib_warn "  pacman -Ss <name>   /   https://archlinux.org/packages/  and update install/packages.txt"
-  exit 1
-fi
-
-blib_ok "Arch bootstrap complete — open a new shell or: exec zsh"
-blib_say "then verify with:  core-doctor    (and  core-version  for the vendored Core)"
+blib_main "$@"
