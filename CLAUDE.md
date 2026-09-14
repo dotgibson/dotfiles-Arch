@@ -61,10 +61,11 @@ lint + test + dry-run, `secrets` runs gitleaks, and `core-lock` / `core-verify`
 handle vendored-Core provenance (both need a `dotfiles-core` checkout at
 `CORE_REPO`). Core's own `make audit` / `make sync` live **upstream**, not here.
 
-Note CI never exercises `provision()` — the reusable bootstrap test only runs
-`--links-only`. Package installation is covered by `test/check-packages.sh` (via
-`make test`, which the `packages` workflow runs); anything else in `provision()`
-needs a real box or container.
+Note CI never really installs anything: the reusable bootstrap test runs
+`--links-only`, and its stubbed leg enters `bootstrap_provision()` with pacman and
+the downloaders replaced by logging no-ops. Package names are resolved by
+`test/check-packages.sh` (via `make test`, which the `packages` workflow runs);
+anything else in `bootstrap_provision()` needs a real box or container.
 
 ## Where things are
 
