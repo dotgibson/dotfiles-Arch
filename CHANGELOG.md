@@ -23,6 +23,20 @@ Entries below therefore cover the **Arch OS-native layer only**: `bootstrap.sh`,
 
 ### Added
 
+- **`make lint` stops warning about `pacman` and `checkupdates` on every package verb**
+  (dotgibson/dotfiles-core#1087, dotgibson/dotfiles-core#1104). Core's capability
+  cross-check warns when a `PKG_*` verb's leading binary is absent from
+  `install/packages.txt`, and it fired on **7 verbs** here for two different reasons.
+  `pacman` is base-system, and that file records what this repo ADDS to a box.
+  `checkupdates` **is** installed — just under another name, from `pacman-contrib`, which
+  the list does carry; the check matches package names, not the binaries inside them.
+  `PKG_UNLISTED_TOOLS=pacman checkupdates` declares both, and the declaration now
+  validates with zero warnings.
+
+  Kept honest from both ends: a name no declared verb runs is a FAILURE, and so is a name
+  `packages.txt` actually installs. Needs Core **≥ 7.10.0** vendored — an older validator
+  rejects the key outright.
+
 - **The README opens with a rendered terminal hero** (dotgibson/dotfiles-core#948).
   `assets/demo.gif` is filmed from `assets/demo.tape`, which dotfiles-core generates from
   one shared template for all nine OS and role repos — the same tour everywhere, plus the

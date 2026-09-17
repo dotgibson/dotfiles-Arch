@@ -41,6 +41,14 @@ PKG_COUNT_PENDING=checkupdates
 # checkupdates prints `name oldver -> newver`, one per line: default match and
 # field 1 are correct.
 
+# ── what --packages must not nag about (#1087) ────────────────────────────────
+# Two reasons, not one. `pacman` is base-system — packages.txt lists what this repo
+# ADDS, so the package manager is not in it. `checkupdates` IS installed, under another
+# name: it comes from `pacman-contrib`, which packages.txt does list (and annotates
+# `# provides checkupdates, paccache, rankmirrors`). The cross-check matches package
+# names, not the binaries inside them, so it cannot see that on its own.
+PKG_UNLISTED_TOOLS=pacman checkupdates
+
 # ── scheduler (required) ──────────────────────────────────────────────────────
 SCHEDULER=systemd
 SCHEDULER_UNIT_DIR=~/.config/systemd/user
