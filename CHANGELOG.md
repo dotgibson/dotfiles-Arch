@@ -23,6 +23,12 @@ Entries below therefore cover the **Arch OS-native layer only**: `bootstrap.sh`,
 
 ### Added
 
+- **`jc` is installed** (dotgibson/dotfiles-core#1208). `extra/jc` converts the
+  output of `ps`, `ss`, `dig` and friends to JSON (`ss -tlnp | jc --ss | jq`), next to
+  `gron` in `install/packages.txt`. This is the OS-first step of the fleet ratchet: Core
+  adds the detection line, the core-doctor `data / net` row and the PORTING-MATRIX row
+  once the OS repos install it.
+
 - **`make lint` stops warning about `pacman` and `checkupdates` on every package verb**
   (dotgibson/dotfiles-core#1087, dotgibson/dotfiles-core#1104). Core's capability
   cross-check warns when a `PKG_*` verb's leading binary is absent from

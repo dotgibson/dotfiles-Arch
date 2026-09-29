@@ -23,6 +23,7 @@ procs          # ps   (HAVE_PROCS in 00-tools.zsh picks it up)
 sd             # sed-alternative (nvim-spectre / scripts; parity with the Mac)
 duf            # df   (disk-usage/free viewer)
 gron           # greppable JSON  (gron | grep | gron -u)
+jc             # command output -> JSON (ps/ss/dig | jc --X | jq); core-doctor data / net row
 glow           # markdown renderer for the terminal
 gum            # charm's shell-script UI toolkit (prompts/spinners/pickers)
 xh             # HTTPie-style HTTP client (curl companion)
