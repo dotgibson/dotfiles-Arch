@@ -55,7 +55,7 @@ bootstrap.sh — provision an Arch box (desktop or WSL/ArchWSL) and wire up dotf
   ./bootstrap.sh                 full: pacman packages + extras + symlinks
   ./bootstrap.sh --links-only    just (re)create symlinks (no pacman)
   ./bootstrap.sh --dry-run       preview EVERYTHING, change nothing
-  ./bootstrap.sh --no-flatpak    skip Flathub/GUI apps (recommended on WSL)
+  ./bootstrap.sh --no-flatpak    skip Flathub/GUI apps (WSL, headless/server boxes)
   ./bootstrap.sh --only zsh,nvim link ONLY these Core module groups
   ./bootstrap.sh --skip tmux     link everything EXCEPT these groups
   ./bootstrap.sh -h, --help      show this help and exit
@@ -353,9 +353,14 @@ bootstrap_provision() {
 
   if ((DO_FLATPAK)) && ! ((IS_WSL)); then
     blib_say "Flathub"
-    flatpak remote-add --if-not-exists flathub \
-      https://flathub.org/repo/flathub.flatpakrepo >/dev/null 2>&1 ||
-      blib_note_fail "Flathub remote — could not be added; retry: flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo"
+    # Under blib_priv, like pacman above (#199). Without --user this is a SYSTEM remote,
+    # which flatpak authorizes through polkit — and a headless/SSH box has no polkit agent
+    # to prompt, so as the plain user it fails with "EnsureRepo not allowed for user" and
+    # takes the whole run to exit 1. Running it as root sidesteps polkit entirely. stderr
+    # is left visible so a real failure says why, not just that it happened.
+    blib_priv flatpak remote-add --if-not-exists flathub \
+      https://flathub.org/repo/flathub.flatpakrepo >/dev/null ||
+      blib_note_fail "Flathub remote — could not be added; retry: sudo flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo"
   fi
 
   # ── Optional, NOT automated (documented manual steps) ──────────────────────
