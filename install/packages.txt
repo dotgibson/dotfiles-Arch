@@ -42,10 +42,15 @@ go-yq          # yq — mikefarah's *Go* yq. Binary is `yq`. NOT the Arch `yq`
 # see bootstrap.sh's carapace block, and core/PORTING-MATRIX.md's carapace footnote ²⁷.
 # Native route for all four, if you already run paru:
 #   paru -S carapace-bin sesh-bin 1password-cli viddy
-# The opt-in Core extras jujutsu/difftastic/ast-grep ARE in `extra` but are left
-# out by design — Core gates them on HAVE_JJ/HAVE_DIFFT/HAVE_ASTGREP, so a box
-# without them just skips the wiring. `pacman -S jujutsu difftastic ast-grep` to
-# enable.
+# jujutsu/difftastic/ast-grep used to be left out here as "opt-in" — but
+# os/arch.capabilities deliberately declares no TOOLS_OPTIN (Arch packages all three
+# in `extra`, so the matrix gives no delta), so core-doctor falls back to Core's
+# _CORE_DOCTOR_OPTIN default (core/zsh/30-functions.zsh) — and none of the three is
+# in that list. It therefore counts them EXPECTED on Arch, and omitting them
+# rendered a false ✗ on every fresh box. They are installed below.
+jujutsu        # jj — git-compatible VCS, additive (HAVE_JJ-gated aliases)
+difftastic     # difft — structural diff, on-demand `git dft`; delta stays the pager
+ast-grep       # structural code search/rewrite — probed for core-doctor, no flag/alias
 
 # ── prompt / history / runtime mgr / file mgr (in repos on Arch) ─
 starship       # prompt   (Fedora installs this from upstream; Arch packages it)
