@@ -124,6 +124,13 @@ Entries below therefore cover the **Arch OS-native layer only**: `bootstrap.sh`,
 
 ### Fixed
 
+- **The Go fallback installs Go before it uses it.** On a box with no `go`, bootstrap's
+  `mise exec go@latest` arm never fetched a toolchain: Core's `mise/config.toml` sets
+  `auto_install = false`, and mise 2026.10.7 carries that into `exec_auto_install`. So the
+  exec failed in about two seconds and every Go-installed extra was skipped. It now runs
+  `mise install go@latest` first, which is a no-op once Go is present
+  (dotgibson/dotfiles-Fedora#209 found it).
+
 - **The tmux auto-attach honours `DOTFILES_NO_AUTOTMUX`, the fleet's one opt-out name**
   (dotgibson/dotfiles-core#877). MacBook, openSUSE and Gentoo already read it; this layer
   attached unconditionally for any interactive TTY, which is how dotfiles-core's README hero
