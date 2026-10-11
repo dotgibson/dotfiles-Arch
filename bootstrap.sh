@@ -282,7 +282,11 @@ bootstrap_provision() {
       GOBIN="$gobin" go install "$spec" >>"$go_log" 2>&1 ||
         blib_note_fail "$3 — go install failed; see $go_log; retry: GOBIN=$gobin go install $spec"
     elif command -v mise >/dev/null 2>&1; then
-      GOBIN="$gobin" mise exec go@latest -- go install "$spec" >>"$go_log" 2>&1 ||
+      # `mise install go@latest` FIRST: Core's mise/config.toml sets auto_install = false,
+      # and mise (verified 2026.10.7) carries that into exec_auto_install, so a bare
+      # `mise exec go@latest` on a box with no Go fails in ~2s instead of downloading it
+      # (dotgibson/dotfiles-Fedora#209). It is a no-op once Go is present.
+      { mise install go@latest && GOBIN="$gobin" mise exec go@latest -- go install "$spec"; } >>"$go_log" 2>&1 ||
         blib_note_fail "$3 — go install failed; see $go_log; retry: GOBIN=$gobin go install $spec"
     else
       blib_note_fail "$3 — needs Go; install later with: GOBIN=$gobin go install $spec"
