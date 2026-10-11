@@ -360,7 +360,7 @@ bootstrap_provision() {
     # is left visible so a real failure says why, not just that it happened.
     blib_priv flatpak remote-add --if-not-exists flathub \
       https://flathub.org/repo/flathub.flatpakrepo >/dev/null ||
-      blib_note_fail "Flathub remote — could not be added; retry: sudo flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo"
+      blib_note_fail "Flathub remote — could not be added; retry: ${BLIB_SU:+$BLIB_SU }flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo"
   fi
 
   # ── Optional, NOT automated (documented manual steps) ──────────────────────
